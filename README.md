@@ -6,6 +6,8 @@
     ✅️ Could open last/next level dirctory
     Space or enter to select/unselect a file with background color 
 
+![](./.github/multi-do.gif)
+
 # Installation
 ## Plugin Managers
 ### packer
