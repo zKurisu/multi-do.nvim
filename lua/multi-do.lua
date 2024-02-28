@@ -52,14 +52,8 @@ function SelectCancelToggle()
           selectedItems[selectedPath] = nil
           highlight.clearHighlight(buf, lineNr)
 
-          local filetype
-          if vim.fn.isdirectory(items[selectedLineNr]) == 1 then
-            filetype = "Dir"
-          else
-            filetype = "File"
-          end
-          highlight.highlightLine(buf, selectedLineNr, filetype)
-          highlight.highlightLine(buf, selectedLineNr+1, filetype)
+          highlight.highlightLine(buf, selectedLineNr, utils.getSelectedType(items[selectedLineNr]))
+          highlight.highlightLine(buf, selectedLineNr+1, utils.getSelectedType(items[selectedLineNr+1]))
           break
         end
       end
@@ -113,4 +107,3 @@ function MultidoList()
   highlight.highlightLines(buf, items)
   highlight.highlightSelectedList(buf, items, selectedItems)
 end
-

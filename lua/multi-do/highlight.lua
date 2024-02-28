@@ -38,13 +38,7 @@ local function highlightLines(buf, lines)
   vim.api.nvim_buf_set_option(buf, "modifiable", true)
 
   for lineNr, path in pairs(lines) do
-    local filetype
-    if vim.fn.isdirectory(path) == 1 or path == "." or path == ".." then
-      filetype = "Dir"
-    else
-      filetype = "File"
-    end
-    highlightLine(buf, lineNr, filetype)
+    highlightLine(buf, lineNr, utils.getSelectedType(path))
   end
 
   vim.api.nvim_buf_set_option(buf, "modifiable", false)
@@ -74,3 +68,4 @@ return {
   highlightSelectedList = highlightSelectedList,
   clearHighlight = clearHighlight,
 }
+

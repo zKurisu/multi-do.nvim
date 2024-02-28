@@ -31,6 +31,16 @@ local function listItems(buf, items)
   vim.api.nvim_buf_set_option(buf, "modifiable", false)
 end
 
+local function getSelectedType(selected)
+  local filetype
+  if vim.fn.isdirectory(selected) == 1 or selected == "." or selected == ".." then
+    filetype = "Dir"
+  else
+    filetype = "File"
+  end
+  return filetype
+end
+
 -- open a new window in "left", "right"
 local function openNewWin(posi)
   local command
@@ -50,7 +60,7 @@ return {
   getDir = getDir,
   getItems = getItems,
   listItems = listItems,
+  getSelectedType = getSelectedType,
   openNewWin = openNewWin,
   closeWin = closeWin,
 }
-
