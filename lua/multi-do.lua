@@ -53,12 +53,12 @@ function SelectCancelToggle()
   local lineNr = tonumber(vim.api.nvim_win_get_cursor(0)[1])
   local text = vim.api.nvim_get_current_line()
   local isDir = vim.fn.isdirectory(text)
-  local items
+  local items = utils.getItems(dir)
 
   if isDir == 1 or text == ".." then
     dir = utils.getDir(text)
     items = utils.getItems(dir)
-    listItems()
+    listItems(items)
     highlight.highlightLines(buf, items)
   else
     if vim.tbl_count(selectedItems) == 0 then

@@ -43,7 +43,7 @@ local function highlightLines(buf, lines)
     else
       filetype = "File"
     end
-    highlightLine(lineNr-1, filetype)
+    highlightLine(buf, lineNr-1, filetype)
   end
 
   vim.api.nvim_buf_set_option(buf, "modifiable", false)
@@ -57,8 +57,8 @@ local function highlightSelectedList(buf, lines, selectedItems)
     local lineNr = i
     for _, v in pairs(selectedItems) do
       if lineNr == v then
-        clearHighlight(lineNr)
-        highlightLine(lineNr-1, "Select")
+        clearHighlight(buf, lineNr)
+        highlightLine(buf, lineNr-1, "Select")
       end
     end
   end
