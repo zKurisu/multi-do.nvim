@@ -6,6 +6,7 @@
 -- 2024-02-27
 --
 --
+vim.keymap.set("n", "md", "<cmd>lua MultidoList()<CR>")
 
 local highlight = require('multi-do.highlight')
 local utils = require('multi-do.utils')
@@ -34,8 +35,14 @@ function SelectCancelToggle()
   local isDir = vim.fn.isdirectory(path)
   local items = utils.getItems(dir)
 
-  if isDir == 1 or path == ".." then
-    dir = utils.getDir(path)
+  if isDir == 1 or path == ".." or path == "." then
+    if path == ".." then
+      dir = string.match(string.sub(dir,1,-2), "^(.-)[^/]-$")
+    elseif path == "." then
+    else
+      dir = utils.getDir(path)
+    end
+
     items = utils.getItems(dir)
     utils.listItems(buf, items)
     highlight.highlightLines(buf, items)
@@ -67,7 +74,7 @@ end
 
 local function run(command)
   for item, _ in pairs(selectedItems) do
-    vim.api.nvim_command("argadd "..item)
+    vim.api.nvim_command("argadd "..item.." | argdedupe")
   end
 
   vim.api.nvim_command("argdo "..command)
