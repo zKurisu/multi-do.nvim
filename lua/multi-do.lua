@@ -7,8 +7,6 @@
 --
 --
 
-vim.keymap.set("n", "md", "<cmd>lua MultidoList()<CR>")
-
 local highlight = require('multi-do.highlight')
 local utils = require('multi-do.utils')
 highlight.initHighlightGroups()
