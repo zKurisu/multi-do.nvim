@@ -9,95 +9,21 @@
 
 vim.keymap.set("n", "md", "<cmd>lua MultidoList()<CR>")
 
+local highlight = require('multi-do.highlight')
+local utils = require('multi-do.utils')
+highlight.initHighlightGroups()
+
 local selectedItems = {}
 
-local function getDir(path)
-  if vim.fn.isdirectory(path) == 1 then
-    return path.."/"
-  else
-    return string.match(path, "^(.-)[^/]-$")
-  end
-end
-
-local dir = getDir(vim.fn.expand('%:p'))
+local dir = utils.getDir(vim.fn.expand('%:p'))
 
 local winPosi = "left"
-local highlightGroupNamePrefix = "Multido"
 local selectKey = "<C-x>"
 local getCommandKey = "<C-s>"
 local buf
 
-local highlightGroups = {
-  File = {fg= vim.g.terminal_color_2, bg= vim.g.terminal_color_2},
-  Dir = {fg= vim.g.terminal_color_6, bg=vim.g.terminal_color_4},
-  Select = {fg=vim.g.terminal_color_5, bg=vim.g.terminal_color_6},
-}
-
-local function initHighlightGroups()
-  for hgname, color in pairs(highlightGroups) do
-    local fg = color.fg
-    local bg = color.bg
-
-    vim.api.nvim_command("highlight "..highlightGroupNamePrefix..hgname.." guifg="..fg)
-  end
-end
-
-initHighlightGroups()
-
-
 -- get file list
-local function getItems()
-  local items = vim.split(vim.fn.glob(dir .. '*'), "\n")
-  table.insert(items, 1, "..")
-  table.insert(items, 1, ".")
-  return items
-end
 
-
-local function highlightLine(lineNr, type)
-  vim.api.nvim_buf_add_highlight(buf, -1, highlightGroupNamePrefix..type, lineNr, 0, -1)
-end
-
-local function clearHighlight(lineNr)
-  vim.api.nvim_buf_clear_namespace(buf, -1, lineNr, lineNr)
-end
-
-local function highlightLines()
-  vim.api.nvim_buf_set_option(buf, "modifiable", true)
-
-  local items = getItems()
-
-  for lineNr, path in pairs(items) do
-    local filetype
-    if vim.fn.isdirectory(path) == 1 or path == "." or path == ".." then
-      filetype = "Dir"
-    else
-      filetype = "File"
-    end
-    highlightLine(lineNr-1, filetype)
-  end
-
-  vim.api.nvim_buf_set_option(buf, "modifiable", false)
-end
-
--- whether it's a file or dir, selected has a high order
-local function highlightSelectedList()
-  vim.api.nvim_buf_set_option(buf, "modifiable", true)
-
-  local items = getItems()
-
-  for i, _ in pairs(items) do
-    local lineNr = i
-    for _, v in pairs(selectedItems) do
-      if lineNr == v then
-        clearHighlight(lineNr)
-        highlightLine(lineNr-1, "Select")
-      end
-    end
-  end
-
-  vim.api.nvim_buf_set_option(buf, "modifiable", false)
-end
 
 -- open a new window in "left", "right"
 local function openNewWin(posi)
@@ -112,11 +38,10 @@ end
 
 
 -- display list in buffer
-local function listItems()
+local function listItems(items)
   vim.api.nvim_buf_set_option(buf, "modifiable", true)
   -- change list to base name
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
-  local items = getItems()
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, items)
   vim.api.nvim_buf_set_option(buf, "modifiable", false)
 end
@@ -128,11 +53,13 @@ function SelectCancelToggle()
   local lineNr = tonumber(vim.api.nvim_win_get_cursor(0)[1])
   local text = vim.api.nvim_get_current_line()
   local isDir = vim.fn.isdirectory(text)
+  local items
 
   if isDir == 1 or text == ".." then
-    dir = getDir(text)
+    dir = utils.getDir(text)
+    items = utils.getItems(dir)
     listItems()
-    highlightLines()
+    highlight.highlightLines(buf, items)
   else
     if vim.tbl_count(selectedItems) == 0 then
       selectedItems[text] = lineNr
@@ -152,7 +79,7 @@ function SelectCancelToggle()
     end
   end
 
-  highlightSelectedList()
+  highlight.highlightSelectedList(buf, items, selectedItems)
 end
 
 local function run(command)
@@ -177,6 +104,7 @@ end
 
 
 function MultidoList()
+  local items = utils.getItems(dir)
   local options = {
     bufhidden = 'wipe',
     buftype = 'nowrite',
@@ -192,7 +120,6 @@ function MultidoList()
 
   openNewWin(winPosi)
   vim.api.nvim_win_set_buf(0, buf)
-  listItems()
-  highlightLines()
+  listItems(items)
+  highlight.highlightLines(buf, items)
 end
-
