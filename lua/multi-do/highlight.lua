@@ -26,11 +26,12 @@ local function initHighlightGroups()
 end
 
 local function highlightLine(buf, lineNr, type)
-  vim.api.nvim_buf_add_highlight(buf, -1, highlightGroupNamePrefix..type, lineNr, 0, -1)
+  vim.api.nvim_buf_add_highlight(buf, -1, highlightGroupNamePrefix..type, lineNr-1, 0, -1)
 end
 
 local function clearHighlight(buf, lineNr)
-  vim.api.nvim_buf_clear_namespace(buf, -1, lineNr, lineNr)
+  print("clear "..lineNr)
+  vim.api.nvim_buf_clear_namespace(buf, -1, lineNr, lineNr+1)
 end
 
 local function highlightLines(buf, lines)
@@ -43,7 +44,7 @@ local function highlightLines(buf, lines)
     else
       filetype = "File"
     end
-    highlightLine(buf, lineNr-1, filetype)
+    highlightLine(buf, lineNr, filetype)
   end
 
   vim.api.nvim_buf_set_option(buf, "modifiable", false)
@@ -53,12 +54,12 @@ end
 local function highlightSelectedList(buf, lines, selectedItems)
   vim.api.nvim_buf_set_option(buf, "modifiable", true)
 
-  for i, _ in pairs(lines) do
+  for i, path in pairs(lines) do
     local lineNr = i
-    for _, v in pairs(selectedItems) do
-      if lineNr == v then
-        clearHighlight(buf, lineNr)
-        highlightLine(buf, lineNr-1, "Select")
+    for k, v in pairs(selectedItems) do
+      if k == path and v == lineNr then
+        highlightLine(buf, lineNr, "Select")
+        break
       end
     end
   end
@@ -71,4 +72,5 @@ return {
   highlightLine = highlightLine,
   highlightLines = highlightLines,
   highlightSelectedList = highlightSelectedList,
+  clearHighlight = clearHighlight,
 }

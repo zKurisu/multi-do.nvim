@@ -18,32 +18,13 @@ local selectedItems = {}
 local dir = utils.getDir(vim.fn.expand('%:p'))
 
 local winPosi = "left"
-local selectKey = "<C-x>"
+local selectKey = "<C-p>"
 local getCommandKey = "<C-s>"
 local buf
 
--- get file list
-
-
--- open a new window in "left", "right"
-local function openNewWin(posi)
-  local command
-  if posi == "left" then
-    command = "let &splitright=0 | vnew | set nonumber norelativenumber"
-  elseif posi == "right" then
-    command = "set splitright | vnew | set nonumber norelativenumber"
-  end
-  vim.api.nvim_command(command)
-end
-
-
--- display list in buffer
-local function listItems(items)
-  vim.api.nvim_buf_set_option(buf, "modifiable", true)
-  -- change list to base name
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, items)
-  vim.api.nvim_buf_set_option(buf, "modifiable", false)
+local function keymapSetting()
+  vim.api.nvim_buf_set_keymap(buf, "n", selectKey, "<cmd>lua SelectCancelToggle()<CR>", {})
+  vim.api.nvim_buf_set_keymap(buf, "n", getCommandKey, "<cmd>lua GetCommand()<CR>", {})
 end
 
 -- append a item to list
@@ -51,30 +32,40 @@ end
 -- delete the line number in selected list
 function SelectCancelToggle()
   local lineNr = tonumber(vim.api.nvim_win_get_cursor(0)[1])
-  local text = vim.api.nvim_get_current_line()
-  local isDir = vim.fn.isdirectory(text)
+  local path = vim.api.nvim_get_current_line()
+  local isDir = vim.fn.isdirectory(path)
   local items = utils.getItems(dir)
 
-  if isDir == 1 or text == ".." then
-    dir = utils.getDir(text)
+  if isDir == 1 or path == ".." then
+    dir = utils.getDir(path)
     items = utils.getItems(dir)
-    listItems(items)
+    utils.listItems(buf, items)
     highlight.highlightLines(buf, items)
   else
     if vim.tbl_count(selectedItems) == 0 then
-      selectedItems[text] = lineNr
+      selectedItems[path] = lineNr
     else
       local notExist = true
-      for k, v in pairs(selectedItems) do
-        if v == lineNr then
+      for selectedPath, selectedLineNr in pairs(selectedItems) do
+        if selectedPath == path and selectedLineNr == lineNr then
           notExist = false
-          selectedItems[k] = nil
+          selectedItems[selectedPath] = nil
+          highlight.clearHighlight(buf, lineNr)
+
+          local filetype
+          if vim.fn.isdirectory(items[selectedLineNr]) == 1 then
+            filetype = "Dir"
+          else
+            filetype = "File"
+          end
+          highlight.highlightLine(buf, selectedLineNr, filetype)
+          highlight.highlightLine(buf, selectedLineNr+1, filetype)
           break
         end
       end
 
       if notExist then
-        selectedItems[text] = lineNr
+        selectedItems[path] = lineNr
       end
     end
   end
@@ -87,21 +78,19 @@ local function run(command)
     vim.api.nvim_command("argadd "..item)
   end
 
-  vim.api.nvim_command("silent argdo "..command)
+  vim.api.nvim_command("argdo "..command)
 end
 
 -- get command to run
 function GetCommand()
   vim.ui.input({}, function (input)
+    if input == nil  then
+      input = "silent"
+    end
     run(input)
+    utils.closeWin()
   end)
 end
-
-local function keymapSetting()
-  vim.api.nvim_buf_set_keymap(buf, "n", selectKey, "<cmd>lua SelectCancelToggle()<CR>", {})
-  vim.api.nvim_buf_set_keymap(buf, "n", getCommandKey, "<cmd>lua GetCommand()<CR>", {})
-end
-
 
 function MultidoList()
   local items = utils.getItems(dir)
@@ -118,8 +107,10 @@ function MultidoList()
     vim.api.nvim_buf_set_option(buf, opt, val)
   end
 
-  openNewWin(winPosi)
+  utils.openNewWin(winPosi)
   vim.api.nvim_win_set_buf(0, buf)
-  listItems(items)
+  utils.listItems(buf, items)
   highlight.highlightLines(buf, items)
+  highlight.highlightSelectedList(buf, items, selectedItems)
 end
+
